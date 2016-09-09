@@ -15,6 +15,8 @@ library(reshape2) # data shaping
 library(tidyr) # data cleaning
 library(dplyr) # data cleaning
 library(png) # for the presenting of images
+library(splitstackshape) # for split csplit 
+
 
 ######### Housekeeping And Authentication
 setwd("/Users/ryan/Documents/Project_Thought2Vec2EEG")
@@ -75,3 +77,49 @@ for (i in 1:len){
 catchers_mitt <- data.frame(lapply(catchers_mitt, as.character), stringsAsFactors=FALSE)
 dim(catchers_mitt)
 write.csv(catchers_mitt,"1500_samples_knowledge_graph_raw.csv")
+
+
+
+
+
+######  THIS SECTION PLOTS ON OUR TAG (PHysical = 1 ; Conceptual = 9) to our FIRST LEVEL Knowledge Graph Data
+
+tag_table <- read.csv("tag_table.csv",header=TRUE)
+head(tag_table) # people and food = 1
+tail(tag_table) # concepts = 9
+
+data <- data.frame(catchers_mitt$knowledgegraph) # just want knowledge graph from catcher's mitt
+data <- cSplit(data, 'catchers_mitt.knowledgegraph', sep="/", type.convert=FALSE) # separate the / and / between levels
+head(data)
+
+temp <- rowSums(!is.na(data)) # count depth of trees (actually N+1)
+
+data <- data$catchers_mitt.knowledgegraph_2
+data <- data.frame(data)
+setnames(data,c("tag"))
+data$depth <- temp
+head(data)
+data$knowledgegraph <- catchers_mitt$knowledgegraph #add back
+data$text <- catchers_mitt$text #add back
+head(data)
+tag_table
+data <- merge(data, tag_table, by = c("tag")) # gonna strip out the N/A
+head(data)
+data <- data[,c(4,3,1,5,2)]
+
+
+plot(jitter(data[,'physical.conceptual']), jitter(data[,'depth']), 
+     main="Conceptual vs. Graph-Depth",
+     xlab="Conceptual", ylab="Graph-Depth",
+     pch=19, col="darkgreen")
+text(jitter(data[,'physical.conceptual']), jitter(data[,'depth']),  data$text,
+     cex=0.65, pos=3,col="red") 
+
+
+###  NEXT UP! THIS SECTION DOES REAL TIME PROCESSING AND PLOTTING
+
+# 1 STT
+# 2 Text to alchemy_url
+# 3 ENrich and store in table or data frame
+# 4 extract 'coordinates' as above
+# 5 plot
